@@ -28,20 +28,7 @@ class PlotManager:
             y_col=1,
             separator=','):
         """
-        Plots a graph based on the provided CSV file data and user settings.
-        
-        Args:
-            files (list of str): List of file paths to CSV files.
-            x_label (str): Label for the x-axis.
-            y_label (str): Label for the y-axis.
-            title (str): Title of the graph.
-            scale_x (float): Scaling factor for the x-axis.
-            scale_y (float): Scaling factor for the y-axis.
-            normalize_x (bool): Whether to normalize x-axis data.
-            normalize_y (bool): Whether to normalize y-axis data.
-            legend_labels (list of str): Custom legend labels.
-            x_limits (tuple): Min and max limits for the x-axis.
-            y_limits (tuple): Min and max limits for the y-axis.
+        Plots a graph using data from one or more CSV files.
         """
         if not files:
             raise ValueError("No files provided for plotting.")
@@ -89,40 +76,56 @@ class PlotManager:
         # Show the plot
         plt.show()
 
-    def read_csv_data(self, file_path, x_col, y_col, header_rows, sep_type, data_start_row=20):
+    def read_csv_data(self, file_path, x_col, y_col, metadata_rows, sep_type):
         """
-        Reads X and Y data from a CSV file using pandas.
+        Reads CSV data from a file and extracts the specified columns.
 
-        Parameters:
-        - file_path (str): Path to the CSV file.
-        - x_col (int or str): Column index or name for X data (default is 0).
-        - y_col (int or str): Column index or name for Y data (default is 1).
-        - header_rows (int): Number of rows to skip for headers (default is 1).
-        - data_start_row (int): Row number where actual data starts (default is 20).
+        Args:
+            file_path (str): Path to the CSV file.
+            x_col (int): Index of the column to be used as X data.
+            y_col (int): Index of the column to be used as Y data.
+            header_rows (int): Number of header rows in the CSV file.
+            sep_type (str): Separator used in the CSV file.
 
         Returns:
-        - x_data (pd.Series): Series of X data.
-        - y_data (pd.Series): Series of Y data.
+            tuple: Two pandas Series objects containing the X and Y data.
         """
         try:
             # Detect file encoding
             with open(file_path, 'rb') as file:
                 raw_data = file.read()
                 result = chardet.detect(raw_data)
-                encoding = result['encoding']
+                encoding_detected = result['encoding']
 
             # Read the CSV file with specified header and skiprows
             data = pd.read_csv(
                 file_path, 
                 sep=sep_type, 
-                encoding=encoding, 
-                header=header_rows-1, 
-                skiprows=data_start_row-header_rows, 
-                engine='python')
+                encoding=encoding_detected, 
+                skiprows=metadata_rows, 
+                engine='python',
+                header=0)
+            
+            # Debug prints to verify the content of the data
+            # print(f"Data loaded from {file_path}")
+            # print(f"header_rows = {metadata_rows}")
+            # print(data.head())
 
             # Extract X and Y data
-            x_data = data.iloc[:, x_col]
-            y_data = data.iloc[:, y_col]
+            if pd.api.types.is_numeric_dtype(data.iloc[:, x_col]):
+                x_data = data.iloc[:, x_col]
+                # Debug prints to verify the content of x_data
+                # print(f"x_data (first 5 rows):\n{x_data.head()}")
+            else:
+                x_data = data.index
+            
+            if pd.api.types.is_numeric_dtype(data.iloc[:, y_col]):
+                y_data = data.iloc[:, y_col]
+            else:
+                raise ValueError(f"Column {y_col} is not numeric.")
+
+            # Debug prints to verify the content of x_data and y_data
+            # print(f"y_data (first 5 rows):\n{y_data.head()}")
 
             return x_data, y_data
 

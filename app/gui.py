@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 from file_manager import FileManager
 from plot_manager import PlotManager
-from settings import MAX_FILES, DEFAULT_X_LABEL, DEFAULT_Y_LABEL, DEFAULT_TITLE
+import os
+from settings import MAX_FILES, DEFAULT_X_LABEL, DEFAULT_Y_LABEL, DEFAULT_TITLE, SEPARATORS_DICT
 
 class GraphingApp:
     def __init__(self, root):
@@ -10,9 +11,11 @@ class GraphingApp:
         self.root.title("Python Graphing Application")
         self.root.geometry("900x750")
         self.root.resizable(False, False)
+        icon_path = os.path.join(os.path.dirname(__file__), '../assets/graph_icon.ico')
+        self.root.iconbitmap(icon_path)
 
         # Managers
-        self.file_manager = FileManager(max_files=MAX_FILES)
+        self.file_manager = FileManager()
         self.plot_manager = PlotManager()
 
         # Variables
@@ -27,13 +30,22 @@ class GraphingApp:
         self.header_rows = tk.IntVar(value=1)
         self.x_column_index = tk.IntVar(value=0)
         self.y_column_index = tk.IntVar(value=1)
-        self.separator_var = tk.StringVar(value=",")
+
+        # Separator selection variables
+        self.separator_name = tk.StringVar()
+        self.separator_name.set("Comma")
+        self.separator_str = tk.StringVar()
+        self.separator_str.set(",")
+
+        # X/Y limits
         self.x_min = tk.DoubleVar(value=None)
         self.x_max = tk.DoubleVar(value=None)
         self.use_x_limits = tk.BooleanVar()
         self.y_min = tk.DoubleVar(value=None)
         self.y_max = tk.DoubleVar(value=None)
         self.use_y_limits = tk.BooleanVar()
+
+        # Legend labels
         self.legend_entries = []
 
         # UI Elements
@@ -43,19 +55,20 @@ class GraphingApp:
         # Folder selection
         folder_frame = tk.Frame(self.root)
         folder_frame.pack(pady=5)
-
         folder_label = tk.Label(folder_frame, text="Select Folder:")
         folder_label.pack(side=tk.LEFT)
-
         folder_entry = tk.Entry(folder_frame, textvariable=self.select_folder_var, width=100)
         folder_entry.pack(side=tk.LEFT, padx=5)
 
-        folder_button = tk.Button(folder_frame, text="Browse", command=self.select_folder)
-        folder_button.pack(side=tk.LEFT)
+        # folder_enter_button = tk.Button(folder_frame, text="Select", command=self.select_current_folder)
+        # folder_enter_button.pack(side=tk.LEFT)
+
+        browse_button = tk.Button(folder_frame, text="Browse", command=self.select_folder)
+        browse_button.pack(side=tk.LEFT)
 
         # Load files button
         load_button = tk.Button(folder_frame, text="Load Files", command=self.load_files)
-        load_button.pack(side=tk.LEFT, padx=5)
+        load_button.pack(side=tk.LEFT)
 
         # X and Y column index selection
         column_frame = tk.Frame(self.root)
@@ -68,17 +81,19 @@ class GraphingApp:
         header_entry.grid(row=0, column=1, padx=5, pady=3)
 
         # Separator selection
+        def set_sep_variable(value):
+            self.separator_str.set(SEPARATORS_DICT[self.separator_name.get()])
+
         separator_label = tk.Label(column_frame, text="Separator:")
         separator_label.grid(row=0, column=2, padx=5, pady=3)
-        separator_entry = tk.Entry(column_frame, textvariable=self.separator_var, width=5)
-        separator_entry.grid(row=0, column=3, padx=5, pady=3)
+        separator_menu = tk.OptionMenu(column_frame, self.separator_name, *SEPARATORS_DICT.keys(), command=set_sep_variable)
+        separator_menu.grid(row=0, column=3, padx=5, pady=3)
 
         # X and Y column index entry
         x_column_label = tk.Label(column_frame, text="X Column Index:")
         x_column_label.grid(row=1, column=0, padx=5, pady=5)
         x_column_entry = tk.Entry(column_frame, textvariable=self.x_column_index, width=5)
         x_column_entry.grid(row=1, column=1, padx=5, pady=5)
-        
         y_column_label = tk.Label(column_frame, text="Y Column Index:")
         y_column_label.grid(row=1, column=2, padx=5, pady=5)
         y_column_entry = tk.Entry(column_frame, textvariable=self.y_column_index, width=5)
@@ -198,11 +213,14 @@ class GraphingApp:
         reset_button = tk.Button(button_frame, text="Reset", command=self.reset_app)
         reset_button.grid(row=0, column=3, padx=10)
 
+    # def select_current_folder(self):
+    #     self.log_text.insert(tk.END, "Function Not Implemented\n")
+    #     # self.select_folder_var.set(folder_entry.get())
+    #     # self.log_text.insert(tk.END, f"Folder Selected Manually :\n {folder_entry.get()}\n")
+
     def select_folder(self):
         folder_path = self.file_manager.select_folder()
         self.select_folder_var.set(folder_path)
-        # if folder_path:
-        #     self.log_text.insert(tk.END, f"Selected Folder: {folder_path}\n")
 
     def load_files(self):
         files = self.file_manager.load_files()
@@ -211,6 +229,7 @@ class GraphingApp:
 
     def show_graph(self):
         legend_labels = [entry.get() for entry in self.legend_entries if entry.get().strip()]
+        # print(f'Separator used : {self.separator_str}')
 
         try:
             self.plot_manager.plot_graph(
@@ -226,7 +245,7 @@ class GraphingApp:
                 header_rows=self.header_rows.get(),
                 x_col=self.x_column_index.get(),
                 y_col=self.y_column_index.get(),
-                separator=self.separator_var.get(),
+                separator=self.separator_str.get(),
                 x_limits=(self.x_min.get(), self.x_max.get()),
                 use_x_limits=self.use_x_limits.get(),
                 y_limits=(self.y_min.get(), self.y_max.get()),

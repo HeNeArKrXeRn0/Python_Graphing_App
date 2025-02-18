@@ -10,6 +10,15 @@ DEFAULT_TITLE = "Graph"
 # Application limits
 MAX_FILES = 12
 
+# Separator options
+SEPARATORS_DICT = {
+    "Comma": ",",
+    "Semicolon": ";",
+    "Colon": ":",
+    "Space": " ",
+    "Tab": "\t"
+}
+
 # Graph appearance
 COLOR_PALETTE = [
     'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',

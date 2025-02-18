@@ -4,8 +4,8 @@ from tkinter import filedialog, messagebox
 from settings import MAX_FILES
 
 class FileManager:
-    def __init__(self, max_files=MAX_FILES):
-        self.max_files = max_files
+    def __init__(self):
+        self.max_files = MAX_FILES
         self.folder_path = None
         self.files = []
 
@@ -48,7 +48,6 @@ class FileManager:
         if not self.files:
             return "No files loaded."
 
-        # log_message = f"Selected Folder: {self.folder_path}\n"
         log_message = "Loaded Files:\n"
         log_message += "\n".join(self.files)
         return log_message
