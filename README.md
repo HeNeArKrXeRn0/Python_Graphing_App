@@ -43,6 +43,21 @@ This is a Python-based application for graphing data from CSV files. The applica
 4. Select the folder containing the CSV files using the **Browse** button and select the files you want using the **Load Files** button
    ![Folder and files select](img/img_select_folder_and_files.png)
 
+5. Inspect your CSV files beforehand to use the proper parameters for the **number of header rows**, **separator type**, and the **index number** of the **X** and **Y** vectors. Index starts at 0.
+
+6. Set as the desired the axis options and legend label(s) if required (optional).
+   ![setting_1_curve](img/img_set_all_settings.png)
+   Click the **Show Graph** button, based on the settings above, you should see the following graph
+   ![graph_1_curve](img/img_example_1_curve.png)
+   Click on **Save Graph** to save active graph window as either a PNG or SVG image
+
+7. To select a new data source, click on **Close Graph** and **Reset**
+
+8. To show more than 1 curve, repeat step 4 and select multiple files. With the parameters set as shown below:
+   ![multi_curve_setting](img/img_settings_multi.png)
+   You should see this graph:
+   ![multi_curve_graph](img/img_result_multi.png)
+
 ## File Structure
 
 - [main.py](app/main.py): Entry point of the application.
