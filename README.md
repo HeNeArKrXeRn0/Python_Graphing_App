@@ -15,9 +15,9 @@ This is a Python-based application for graphing data from CSV files. The applica
 
 - Python 3.x
 - Tkinter (usually included with Python)
-- Matplotlib
-- Pandas
-- Chardet (for detecting file encoding)
+- Matplotlib >= 3.10.0
+- Pandas >= 2.2.3
+- Chardet (for detecting file encoding) >= 5.2.0
 
 ## Installation
 
