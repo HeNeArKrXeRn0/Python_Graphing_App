@@ -37,6 +37,12 @@ This is a Python-based application for graphing data from CSV files. The applica
     python app/main.py
     ```
 
+3. You should see this GUI
+   ![GUI_image](img/img_full_gui.png)
+
+4. Select the folder containing the CSV files using the **Browse** button and select the files you want using the **Load Files** button
+   ![Folder and files select](img/img_select_folder_and_files.png)
+
 ## File Structure
 
 - [main.py](app/main.py): Entry point of the application.
