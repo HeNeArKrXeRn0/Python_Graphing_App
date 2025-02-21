@@ -39,17 +39,17 @@ This is a Python-based application for graphing data from CSV files. The applica
 
 ## File Structure
 
-- [main.py]: Entry point of the application.
-- [gui.py]: Contains the [GraphingApp] class which defines the GUI and its functionality.
-- [file_manager.py]: Manages file selection and loading.
-- [plot_manager.py]: Manages plotting and saving graphs.
-- [graph_icon.ico]: Icon for the application window.
+- [main.py](app/main.py): Entry point of the application.
+- [gui.py](app/gui.py): Contains the [GraphingApp] class which defines the GUI and its functionality.
+- [file_manager.py](app/file_manager.py): Manages file selection and loading.
+- [plot_manager.py](app/plot_manager.py): Manages plotting and saving graphs.
+- [settings.py](app/settings.py): Constants definition for the app
 
 ## Graphing Application
 
 ### GraphingApp Class
 
-The [GraphingApp] class is responsible for creating the main application window and handling user interactions. It includes the following key components:
+The [GraphingApp](app/gui.py#L8) class is responsible for creating the main application window and handling user interactions. It includes the following key components:
 
 - **Folder Selection**: Allows users to select a folder containing CSV files.
 - **Column Index Selection**: Allows users to specify the columns to be used for the X and Y data.
@@ -63,15 +63,15 @@ The [GraphingApp] class is responsible for creating the main application window 
 
 ### Methods
 
-- [create_widgets()]: Creates and arranges the GUI elements.
-- [create_axis_inputs(parent)]: Creates input fields for axis labels, title, scaling factors, and axis limits.
-- [create_legend_inputs()]: Creates input fields for legend labels.
-- [create_buttons()]: Creates buttons for showing, saving, and resetting the graph.
-- [select_folder()]: Opens a dialog to select a folder containing CSV files.
-- [load_files()]: Loads the selected CSV files.
-- [show_graph()]: Plots the graph based on the selected options.
-- [save_graph()]: Saves the graph as a PNG or SVG file.
-- [reset_app()]: Resets the application to its initial state.
+- [create_widgets()](app/gui.py#L54): Creates and arranges the GUI elements.
+- [create_axis_inputs(parent)](app/gui.py#L120): Creates input fields for axis labels, title, scaling factors, and axis limits.
+- [create_legend_inputs()](app/gui.py#L181): Creates input fields for legend labels.
+- [create_buttons()](app/gui.py#L200): Creates buttons for showing, saving, and resetting the graph.
+- [select_folder()](app/gui.py#L221): Opens a dialog to select a folder containing CSV files.
+- [load_files()](app/gui.py#L225): Loads the selected CSV files.
+- [show_graph()](app/gui.py#L230): Plots the graph based on the selected options.
+- [save_graph()](app/gui.py#L257): Saves the graph as a PNG or SVG file.
+- [reset_app()](app/gui.py#L268): Resets the application to its initial state.
 
 ## License
 
