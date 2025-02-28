@@ -5,9 +5,9 @@ This is a Python-based application for graphing data from CSV files. The applica
 ## Features
 
 - Load CSV files and plot graphs based on selected columns.
-- Customize graph titles, axis labels, and scaling factors.
-- Normalize data on the X and Y axes.
-- Set axis limits for both X and Y axes.
+- Customize graph titles, axis labels.
+- Normalize and scale data on the X and Y axes.
+- Set axis display limits for both X and Y axes.
 - Save graphs as PNG or SVG files.
 - Reset the application to its initial state.
 
@@ -46,6 +46,8 @@ This is a Python-based application for graphing data from CSV files. The applica
 5. Inspect your CSV files beforehand to use the proper parameters for the **number of header rows**, **separator type**, and the **index number** of the **X** and **Y** vectors. Index starts at 0.
 
 6. Set as the desired the axis options and legend label(s) if required (optional).
+   **Normalize** divides the axis data by its max value (new values range will be from 0 to 1)
+   **Scale Factor** multiplies the axis data by a constant, useful to show percentage (scale factor = 100) after normalizing, or transforming units (e.g. changing Watts to Milliwatts using scale factor = 1000)
    ![setting_1_curve](img/img_set_all_settings.png)
    Click the **Show Graph** button, based on the settings above, you should see the following graph
    ![graph_1_curve](img/img_example_1_curve.png)
