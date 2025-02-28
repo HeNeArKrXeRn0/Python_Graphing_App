@@ -6,6 +6,8 @@ from settings import COLOR_PALETTE, FIGURE_WIDTH, FIGURE_HEIGHT
 
 class PlotManager:
     def __init__(self):
+        # Set the color palette for the plots
+        # COLOR_PALETTE is defined in settings.py
         self.colors = COLOR_PALETTE
 
     def plot_graph(
@@ -29,6 +31,7 @@ class PlotManager:
             separator=','):
         """
         Plots a graph using data from one or more CSV files.
+        All parameters set in the GUI are passed to this method.
         """
         if not files:
             raise ValueError("No files provided for plotting.")
@@ -76,7 +79,7 @@ class PlotManager:
         # Show the plot
         plt.show()
 
-    def read_csv_data(self, file_path, x_col, y_col, metadata_rows, sep_type):
+    def read_csv_data(self, file_path: str, x_col: int, y_col: int, metadata_rows: int, sep_type: int):
         """
         Reads CSV data from a file and extracts the specified columns.
 
@@ -112,16 +115,19 @@ class PlotManager:
             # print(data.head())
 
             # Extract X and Y data
+            # Check if the data in specified columns is numeric (instead of text)
             if pd.api.types.is_numeric_dtype(data.iloc[:, x_col]):
                 x_data = data.iloc[:, x_col]
                 # Debug prints to verify the content of x_data
                 # print(f"x_data (first 5 rows):\n{x_data.head()}")
             else:
+                # If the data is not numeric, use the index as X data
                 x_data = data.index
             
             if pd.api.types.is_numeric_dtype(data.iloc[:, y_col]):
                 y_data = data.iloc[:, y_col]
             else:
+                # If the data is not numeric, return an error
                 raise ValueError(f"Column {y_col} is not numeric.")
 
             # Debug prints to verify the content of x_data and y_data

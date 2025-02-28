@@ -51,17 +51,3 @@ class FileManager:
         log_message = "Loaded Files:\n"
         log_message += "\n".join(self.files)
         return log_message
-
-    # def read_csv(self, file_path):
-    #     """
-    #     Reads a CSV file into a pandas DataFrame.
-    #     Args:
-    #         file_path (str): Path to the CSV file.
-    #     Returns:
-    #         pd.DataFrame: DataFrame containing the CSV data.
-    #     """
-    #     try:
-    #         return pd.read_csv(file_path)
-    #     except Exception as e:
-    #         messagebox.showerror("Error", f"Failed to read file {file_path}: {e}")
-    #         return None

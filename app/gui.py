@@ -7,18 +7,20 @@ from settings import MAX_FILES, DEFAULT_X_LABEL, DEFAULT_Y_LABEL, DEFAULT_TITLE,
 
 class GraphingApp:
     def __init__(self, root):
+        # Setup the GUI window
         self.root = root
         self.root.title("Python Graphing Application")
         self.root.geometry("900x750")
         self.root.resizable(False, False)
+        # Set the icon
         icon_path = os.path.join(os.path.dirname(__file__), '../assets/graph_icon.ico')
         self.root.iconbitmap(icon_path)
 
-        # Managers
+        # Managers for file and plot operations
         self.file_manager = FileManager()
         self.plot_manager = PlotManager()
 
-        # Variables
+        # Tkinter Variables
         self.select_folder_var = tk.StringVar(value="")
         self.x_label = tk.StringVar(value=DEFAULT_X_LABEL)
         self.y_label = tk.StringVar(value=DEFAULT_Y_LABEL)
@@ -32,6 +34,7 @@ class GraphingApp:
         self.y_column_index = tk.IntVar(value=1)
 
         # Separator selection variables
+        # separator_name is the display name in the GUI, separator_str is the actual separator
         self.separator_name = tk.StringVar()
         self.separator_name.set("Comma")
         self.separator_str = tk.StringVar()
@@ -48,7 +51,7 @@ class GraphingApp:
         # Legend labels
         self.legend_entries = []
 
-        # UI Elements
+        # Create UI Elements defined below
         self.create_widgets()
 
     def create_widgets(self):
@@ -60,9 +63,11 @@ class GraphingApp:
         folder_entry = tk.Entry(folder_frame, textvariable=self.select_folder_var, width=100)
         folder_entry.pack(side=tk.LEFT, padx=5)
 
+        # Attempt to create a button to select the current folder from a copy-pasted path, not working
         # folder_enter_button = tk.Button(folder_frame, text="Select", command=self.select_current_folder)
         # folder_enter_button.pack(side=tk.LEFT)
 
+        # Browse button, to select folder from a dialog
         browse_button = tk.Button(folder_frame, text="Browse", command=self.select_folder)
         browse_button.pack(side=tk.LEFT)
 
@@ -70,7 +75,7 @@ class GraphingApp:
         load_button = tk.Button(folder_frame, text="Load Files", command=self.load_files)
         load_button.pack(side=tk.LEFT)
 
-        # X and Y column index selection
+        # X and Y column index selection FRAME
         column_frame = tk.Frame(self.root)
         column_frame.pack(pady=2)
 
@@ -81,15 +86,18 @@ class GraphingApp:
         header_entry.grid(row=0, column=1, padx=5, pady=3)
 
         # Separator selection
+        # set the new separator string when the separator name is changed in the dropdown
+        # SEPARATORS_DICT is a dictionary of separator names and their corresponding strings, defined in settings.py
         def set_sep_variable(value):
             self.separator_str.set(SEPARATORS_DICT[self.separator_name.get()])
 
+        # Separator selection dropdown menu
         separator_label = tk.Label(column_frame, text="Separator:")
         separator_label.grid(row=0, column=2, padx=5, pady=3)
         separator_menu = tk.OptionMenu(column_frame, self.separator_name, *SEPARATORS_DICT.keys(), command=set_sep_variable)
         separator_menu.grid(row=0, column=3, padx=5, pady=3)
 
-        # X and Y column index entry
+        # X and Y data column index entry
         x_column_label = tk.Label(column_frame, text="X Column Index:")
         x_column_label.grid(row=1, column=0, padx=5, pady=5)
         x_column_entry = tk.Entry(column_frame, textvariable=self.x_column_index, width=5)
@@ -113,11 +121,18 @@ class GraphingApp:
         axis_frame = tk.Frame(self.root)
         axis_frame.pack(pady=10)
 
+        # Axis inputs created in a separate function
         self.create_axis_inputs(axis_frame)
+        # Legend inputs created in a separate function
         self.create_legend_inputs()
+        # Buttons created in a separate function
         self.create_buttons()
 
     def create_axis_inputs(self, parent):
+        """
+        Create the input fields for axis labels, title, scale factors, and normalization
+        parent: the parent frame to pack the input fields
+        """
         x_label_label = tk.Label(parent, text="X-axis Label:")
         x_label_label.grid(row=0, column=0, padx=5, pady=5)
         x_label_entry = tk.Entry(parent, textvariable=self.x_label)
@@ -185,6 +200,7 @@ class GraphingApp:
         # Legend labels input frame, packed in root
         legend_input_frame = tk.Frame(self.root)
         legend_input_frame.pack(pady=10)
+        # Create legend labels and entries, total of MAX_FILES split into 2 columns
         for i in range(MAX_FILES):
             legend_label = tk.Label(legend_input_frame, text=f"Legend {i+1}:")
             legend_entry = tk.Entry(legend_input_frame, width=30)
@@ -194,10 +210,14 @@ class GraphingApp:
             else:
                 legend_label.grid(row=i-MAX_FILES//2, column=2, padx=3, pady=3)
                 legend_entry.grid(row=i-MAX_FILES//2, column=3, padx=3, pady=3)
-
+            
+            # store the legend entries in a list
             self.legend_entries.append(legend_entry)
 
     def create_buttons(self):
+        """
+        Create the buttons for plotting, clearing, saving, and resetting the application
+        """
         button_frame = tk.Frame(self.root)
         button_frame.pack(pady=10)
 
@@ -213,6 +233,7 @@ class GraphingApp:
         reset_button = tk.Button(button_frame, text="Reset", command=self.reset_app)
         reset_button.grid(row=0, column=3, padx=10)
 
+    # Attempt to create a function to select the current folder from a copy-pasted path, not working
     # def select_current_folder(self):
     #     self.log_text.insert(tk.END, "Function Not Implemented\n")
     #     # self.select_folder_var.set(folder_entry.get())
@@ -228,10 +249,13 @@ class GraphingApp:
         self.log_text.insert(tk.END, f"{log_message}\n")
 
     def show_graph(self):
+        # Get the legend labels from the entry fields
         legend_labels = [entry.get() for entry in self.legend_entries if entry.get().strip()]
+        # Debugging
         # print(f'Separator used : {self.separator_str}')
 
         try:
+            # Pass the plot parameters from the Tkinter Vars to the plot manager
             self.plot_manager.plot_graph(
                 files=self.file_manager.files,
                 x_label=self.x_label.get(),
@@ -266,6 +290,8 @@ class GraphingApp:
                 messagebox.showerror("Error", f"Failed to save graph: {e}")
 
     def reset_app(self):
+        # Clear the file manager files list
+        # Reset all the Tkinter variables to their default values
         self.file_manager.files = []
         self.log_text.delete(1.0, tk.END)
         self.plot_manager.close_graph()
