@@ -25,3 +25,33 @@ COLOR_PALETTE = [
 ]
 FIGURE_WIDTH = 5 * 1.618  # Golden ratio width
 FIGURE_HEIGHT = 5
+
+# Line style options
+LINE_STYLES = {
+    "Solid": "-",
+    "Dashed": "--",
+    "Dotted": ":",
+    "Dash-dot": "-."
+}
+
+# Marker style options
+MARKER_STYLES = {
+    "None": "",
+    "Circle": "o",
+    "Square": "s",
+    "Triangle": "^",
+    "Diamond": "D",
+    "Pentagon": "p",
+    "Star": "*",
+    "Hexagon": "h",
+    "Plus": "+",
+    "X": "x",
+    "Dot": "."
+}
+
+# Default customization values
+DEFAULT_LINE_STYLE = "-"
+DEFAULT_MARKER_STYLE = ""
+DEFAULT_LINE_WIDTH = 2.0
+DEFAULT_GRID_ENABLED = True
+DEFAULT_PRESET_FILE = "graph_presets.json"

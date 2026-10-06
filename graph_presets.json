@@ -1,0 +1,19 @@
+{
+  "Test_Preset": {
+    "x_label": "DAC",
+    "y_label": "Laser Power",
+    "title": "Test Graph",
+    "scale_factor_x": 1.0,
+    "scale_factor_y": 1.0,
+    "normalize_x": false,
+    "normalize_y": false,
+    "header_rows": 0,
+    "x_column_index": 0,
+    "y_column_index": 1,
+    "separator": ",",
+    "line_style": "--",
+    "marker_style": "Square",
+    "line_width": 1.0,
+    "grid_enabled": true
+  }
+}
