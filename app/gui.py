@@ -6,8 +6,9 @@ import os
 from settings import (
     MAX_FILES, DEFAULT_X_LABEL, DEFAULT_Y_LABEL, DEFAULT_TITLE,
     SEPARATORS_DICT, LINE_STYLES, MARKER_STYLES,
-    DEFAULT_LINE_STYLE, DEFAULT_MARKER_STYLE, DEFAULT_LINE_WIDTH,
-    DEFAULT_GRID_ENABLED
+    DEFAULT_LINE_STYLE, DEFAULT_MARKER_STYLE,
+    DEFAULT_LINE_STYLE_NAME, DEFAULT_MARKER_STYLE_NAME,
+    DEFAULT_LINE_WIDTH, DEFAULT_GRID_ENABLED, DEFAULT_HEADER_ROWS
 )
 
 class GraphingApp:
@@ -34,7 +35,7 @@ class GraphingApp:
         self.scale_factor_y = tk.DoubleVar(value=1.0)
         self.normalize_x = tk.BooleanVar()
         self.normalize_y = tk.BooleanVar()
-        self.header_rows = tk.IntVar(value=1)
+        self.header_rows = tk.IntVar(value=DEFAULT_HEADER_ROWS)
         self.x_column_index = tk.IntVar(value=0)
         self.y_column_index = tk.IntVar(value=1)
 
@@ -61,9 +62,9 @@ class GraphingApp:
         self.y_column_var = tk.StringVar(value="Auto (1)")
         self.column_options = []
 
-        # Customization variables
-        self.line_style_var = tk.StringVar(value=DEFAULT_LINE_STYLE)
-        self.marker_style_var = tk.StringVar(value=DEFAULT_MARKER_STYLE)
+        # Customization variables (hold GUI display names, e.g. "Solid" / "None")
+        self.line_style_var = tk.StringVar(value=DEFAULT_LINE_STYLE_NAME)
+        self.marker_style_var = tk.StringVar(value=DEFAULT_MARKER_STYLE_NAME)
         self.line_width_var = tk.DoubleVar(value=DEFAULT_LINE_WIDTH)
         self.grid_enabled_var = tk.BooleanVar(value=DEFAULT_GRID_ENABLED)
 
@@ -170,7 +171,7 @@ class GraphingApp:
         # Line style
         line_style_label = tk.Label(custom_frame, text="Line Style:")
         line_style_label.grid(row=0, column=0, padx=5, pady=3)
-        self.line_style_dropdown = tk.OptionMenu(custom_frame, self.line_style_var, *LINE_STYLES.values(), command=lambda v: None)
+        self.line_style_dropdown = tk.OptionMenu(custom_frame, self.line_style_var, *LINE_STYLES.keys(), command=lambda v: None)
         self.line_style_dropdown.grid(row=0, column=1, padx=5, pady=3)
 
         # Marker style
@@ -198,6 +199,29 @@ class GraphingApp:
 
         load_preset_button = tk.Button(preset_frame, text="Load Preset", command=self.load_preset)
         load_preset_button.pack(side=tk.LEFT, padx=5)
+
+    @staticmethod
+    def style_to_symbol(mapping, value, default_symbol):
+        """
+        Convert a style display name (e.g. "Dashed") to its Matplotlib symbol.
+        Accepts a raw symbol as-is (backward compat with old presets).
+        """
+        if value in mapping:  # display name
+            return mapping[value]
+        if value in mapping.values():  # already a Matplotlib symbol
+            return value
+        return default_symbol
+
+    @staticmethod
+    def symbol_to_name(mapping, value, default_name):
+        """
+        Convert a Matplotlib symbol (e.g. "--") to its display name.
+        Accepts a display name as-is (new preset format).
+        """
+        if value in mapping:  # already a display name
+            return value
+        inverse = {symbol: name for name, symbol in mapping.items()}
+        return inverse.get(value, default_name)
 
     def create_axis_inputs(self, parent):
         """
@@ -513,7 +537,7 @@ class GraphingApp:
                 self.scale_factor_y.set(settings.get('scale_factor_y', 1.0))
                 self.normalize_x.set(settings.get('normalize_x', False))
                 self.normalize_y.set(settings.get('normalize_y', False))
-                self.header_rows.set(settings.get('header_rows', 1))
+                self.header_rows.set(settings.get('header_rows', DEFAULT_HEADER_ROWS))
                 self.x_column_index.set(settings.get('x_column_index', 0))
                 self.y_column_index.set(settings.get('y_column_index', 1))
                 self.separator_str.set(settings.get('separator', ','))
@@ -524,8 +548,10 @@ class GraphingApp:
                         self.separator_name.set(sep_name)
                         break
 
-                self.line_style_var.set(settings.get('line_style', DEFAULT_LINE_STYLE))
-                self.marker_style_var.set(settings.get('marker_style', DEFAULT_MARKER_STYLE))
+                self.line_style_var.set(self.symbol_to_name(
+                    LINE_STYLES, settings.get('line_style', DEFAULT_LINE_STYLE_NAME), DEFAULT_LINE_STYLE_NAME))
+                self.marker_style_var.set(self.symbol_to_name(
+                    MARKER_STYLES, settings.get('marker_style', DEFAULT_MARKER_STYLE_NAME), DEFAULT_MARKER_STYLE_NAME))
                 self.line_width_var.set(settings.get('line_width', DEFAULT_LINE_WIDTH))
                 self.grid_enabled_var.set(settings.get('grid_enabled', DEFAULT_GRID_ENABLED))
 
@@ -631,8 +657,8 @@ class GraphingApp:
                 use_x_limits=self.use_x_limits.get(),
                 y_limits=y_limits,
                 use_y_limits=self.use_y_limits.get(),
-                line_style=self.line_style_var.get(),
-                marker_style=self.marker_style_var.get(),
+                line_style=self.style_to_symbol(LINE_STYLES, self.line_style_var.get(), DEFAULT_LINE_STYLE),
+                marker_style=self.style_to_symbol(MARKER_STYLES, self.marker_style_var.get(), DEFAULT_MARKER_STYLE),
                 line_width=self.line_width_var.get(),
                 grid_enabled=self.grid_enabled_var.get()
             )
@@ -650,6 +676,14 @@ class GraphingApp:
             self.status_var.set(f"Error: {str(e)}")
 
     def save_graph(self):
+        # Guard: refuse to save when no graph window is currently displayed
+        if not self.plot_manager.has_graph():
+            messagebox.showwarning(
+                "No graph to save",
+                "No graph is currently displayed.\nClick 'Show Graph' first, then save.")
+            self.status_var.set("Save cancelled: no graph displayed")
+            return
+
         file_types = [("PNG files", "*.png"), ("SVG files", "*.svg")]
         file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=file_types)
 
@@ -657,8 +691,10 @@ class GraphingApp:
             try:
                 self.plot_manager.save_graph(file_path)
                 messagebox.showinfo("Success", f"Graph saved to {file_path}")
+                self.status_var.set(f"Graph saved: {os.path.basename(file_path)}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save graph: {e}")
+                self.status_var.set(f"Error: {str(e)}")
 
     def reset_app(self):
         # Clear the file manager files list
@@ -673,13 +709,13 @@ class GraphingApp:
         self.scale_factor_y.set(1.0)
         self.normalize_x.set(False)
         self.normalize_y.set(False)
-        self.header_rows.set(1)
+        self.header_rows.set(DEFAULT_HEADER_ROWS)
         self.x_column_index.set(0)
         self.y_column_index.set(1)
         self.x_column_var.set("Auto (0)")
         self.y_column_var.set("Auto (1)")
-        self.line_style_var.set(DEFAULT_LINE_STYLE)
-        self.marker_style_var.set(DEFAULT_MARKER_STYLE)
+        self.line_style_var.set(DEFAULT_LINE_STYLE_NAME)
+        self.marker_style_var.set(DEFAULT_MARKER_STYLE_NAME)
         self.line_width_var.set(DEFAULT_LINE_WIDTH)
         self.grid_enabled_var.set(DEFAULT_GRID_ENABLED)
         self.x_min.set("")

@@ -6,7 +6,7 @@ import json
 from settings import (
     COLOR_PALETTE, FIGURE_WIDTH, FIGURE_HEIGHT,
     DEFAULT_LINE_STYLE, DEFAULT_MARKER_STYLE, DEFAULT_LINE_WIDTH,
-    DEFAULT_GRID_ENABLED, DEFAULT_PRESET_FILE
+    DEFAULT_GRID_ENABLED, DEFAULT_PRESET_FILE, DEFAULT_HEADER_ROWS
 )
 
 class PlotManager:
@@ -32,7 +32,7 @@ class PlotManager:
             use_x_limits=False,
             y_limits=None,
             use_y_limits=False,
-            header_rows=1,
+            header_rows=DEFAULT_HEADER_ROWS,
             x_col=0,
             y_col=1,
             separator=',',
@@ -171,18 +171,38 @@ class PlotManager:
         except Exception as e:
             return None, None, f"Error: {str(e)}"
 
+    def has_graph(self):
+        """
+        Returns True if a graph is currently displayed.
+
+        Also returns False if the graph window was closed by the user, since
+        Matplotlib then discards the figure and saving would produce a blank image.
+        """
+        return (
+            self.current_fig is not None
+            and plt.fignum_exists(self.current_fig.number)
+        )
+
     def save_graph(self, file_path):
         """
         Saves the currently displayed graph to a file.
 
         Args:
             file_path (str): Path to save the graph (e.g., .png, .svg).
+
+        Raises:
+            ValueError: If no graph is currently displayed.
         """
         if not file_path:
             raise ValueError("File path is required to save the graph.")
 
+        if not self.has_graph():
+            raise ValueError("No graph is currently displayed. Click 'Show Graph' first.")
+
         try:
-            plt.savefig(file_path)
+            # Save the tracked figure explicitly: plt.savefig() would fall back
+            # to a blank figure if the displayed one was discarded
+            self.current_fig.savefig(file_path)
         except Exception as e:
             raise IOError(f"Failed to save graph: {e}")
 

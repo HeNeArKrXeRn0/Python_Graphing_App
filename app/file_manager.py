@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from tkinter import filedialog, messagebox, Toplevel, Text, Scrollbar
 import chardet
-from settings import MAX_FILES, SEPARATORS_DICT
+from settings import MAX_FILES, SEPARATORS_DICT, DEFAULT_HEADER_ROWS
 
 class FileManager:
     def __init__(self):
@@ -53,7 +53,7 @@ class FileManager:
         log_message += "\n".join(self.files)
         return log_message
 
-    def preview_file(self, file_path, header_rows=1, separator=',', num_rows=10):
+    def preview_file(self, file_path, header_rows=DEFAULT_HEADER_ROWS, separator=',', num_rows=10):
         """
         Preview the first few rows of a CSV file.
 
@@ -94,7 +94,7 @@ class FileManager:
         except Exception as e:
             return None, [], str(e)
 
-    def detect_separator(self, file_path, header_rows=1):
+    def detect_separator(self, file_path, header_rows=DEFAULT_HEADER_ROWS):
         """
         Auto-detect the best separator for a CSV file by testing common separators.
 
@@ -159,7 +159,7 @@ class FileManager:
 
         return best_separator, column_info
 
-    def show_preview_dialog(self, file_path, header_rows=1, separator=','):
+    def show_preview_dialog(self, file_path, header_rows=DEFAULT_HEADER_ROWS, separator=','):
         """
         Show a preview dialog with the file data.
 

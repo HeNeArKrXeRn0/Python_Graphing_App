@@ -50,8 +50,15 @@ MARKER_STYLES = {
 }
 
 # Default customization values
+# Symbol values passed to Matplotlib (used by PlotManager)
 DEFAULT_LINE_STYLE = "-"
 DEFAULT_MARKER_STYLE = ""
+# Display names shown in the GUI dropdowns (keys of LINE_STYLES / MARKER_STYLES)
+DEFAULT_LINE_STYLE_NAME = "Solid"
+DEFAULT_MARKER_STYLE_NAME = "None"
 DEFAULT_LINE_WIDTH = 2.0
 DEFAULT_GRID_ENABLED = True
 DEFAULT_PRESET_FILE = "graph_presets.json"
+
+# Number of metadata rows skipped before the CSV header (default: 0)
+DEFAULT_HEADER_ROWS = 0
