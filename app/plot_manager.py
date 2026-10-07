@@ -1,12 +1,15 @@
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import chardet
 import json
+from matplotlib.ticker import LogLocator, LogFormatterMathtext, NullFormatter
 from settings import (
     COLOR_PALETTE, FIGURE_WIDTH, FIGURE_HEIGHT,
     DEFAULT_LINE_STYLE, DEFAULT_MARKER_STYLE, DEFAULT_LINE_WIDTH,
-    DEFAULT_GRID_ENABLED, DEFAULT_PRESET_FILE, DEFAULT_HEADER_ROWS
+    DEFAULT_GRID_ENABLED, DEFAULT_PRESET_FILE, DEFAULT_HEADER_ROWS,
+    DEFAULT_LOG_X, DEFAULT_LOG_Y
 )
 
 class PlotManager:
@@ -16,6 +19,86 @@ class PlotManager:
         self.colors = COLOR_PALETTE
         self.current_fig = None
         self.current_ax = None
+
+    @staticmethod
+    def filter_nonpositive_pairs(x_data, y_data, log_x, log_y):
+        """
+        Drop the points that a log-scaled axis physically cannot display.
+
+        A base-10 log axis cannot render a value <= 0. X and Y are paired, so a
+        point dropped for one axis takes the other axis's value with it. The
+        filter runs on the RAW column values, which keeps the reported count
+        and minimum a statement about the file rather than about whatever
+        Normalize/Scale are about to be applied on top.
+
+        Args:
+            x_data (array-like): X values (pandas Series, index, or ndarray).
+            y_data (array-like): Y values.
+            log_x (bool): True when the X axis is log-scaled.
+            log_y (bool): True when the Y axis is log-scaled.
+
+        Returns:
+            tuple: (x_kept, y_kept, warnings). The arrays are numpy ndarrays,
+                   or the untouched inputs when neither axis is logarithmic.
+                   warnings is a list of filename-free strings, X before Y.
+                   NaN is deliberately kept: Matplotlib already draws it as a
+                   gap in the line.
+        """
+        warnings = []
+        if not log_x and not log_y:
+            return x_data, y_data, warnings
+
+        x = np.asarray(x_data, dtype=float)
+        y = np.asarray(y_data, dtype=float)
+
+        bad_x = (x <= 0) if log_x else np.zeros(x.shape, dtype=bool)
+        bad_y = (y <= 0) if log_y else np.zeros(y.shape, dtype=bool)
+
+        total = len(y)
+        if log_x and bad_x.any():
+            warnings.append(
+                f"{int(bad_x.sum())} of {total} X values <= 0 omitted "
+                f"(log X); min was {x[bad_x].min():.2e}")
+        if log_y and bad_y.any():
+            warnings.append(
+                f"{int(bad_y.sum())} of {total} Y values <= 0 omitted "
+                f"(log Y); min was {y[bad_y].min():.2e}")
+
+        keep = ~(bad_x | bad_y)
+        return x[keep], y[keep], warnings
+
+    @staticmethod
+    def apply_log_axes(ax, log_x, log_y, grid_enabled=False):
+        """
+        Switch the requested axes to a base-10 logarithmic scale.
+
+        Matplotlib's default minor formatter labels every minor tick, which is
+        unreadable over several decades, so the minor ticks are explicitly
+        silenced. Faint minor gridlines accompany the grid when it is on; they
+        draw nothing on a linear axis, whose minor locator is a NullLocator.
+
+        Args:
+            ax (matplotlib.axes.Axes): the axes to configure.
+            log_x (bool): True to log-scale the X axis.
+            log_y (bool): True to log-scale the Y axis.
+            grid_enabled (bool): True to add faint minor gridlines.
+        """
+        if log_x:
+            ax.set_xscale('log', base=10)
+            ax.xaxis.set_major_locator(LogLocator(base=10))
+            ax.xaxis.set_major_formatter(LogFormatterMathtext(base=10))
+            ax.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+            ax.xaxis.set_minor_formatter(NullFormatter())
+
+        if log_y:
+            ax.set_yscale('log', base=10)
+            ax.yaxis.set_major_locator(LogLocator(base=10))
+            ax.yaxis.set_major_formatter(LogFormatterMathtext(base=10))
+            ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+            ax.yaxis.set_minor_formatter(NullFormatter())
+
+        if grid_enabled and (log_x or log_y):
+            ax.grid(which='minor', visible=True, linestyle=':', alpha=0.4)
 
     def plot_graph(
             self,
@@ -39,10 +122,22 @@ class PlotManager:
             line_style=DEFAULT_LINE_STYLE,
             marker_style=DEFAULT_MARKER_STYLE,
             line_width=DEFAULT_LINE_WIDTH,
-            grid_enabled=DEFAULT_GRID_ENABLED):
+            grid_enabled=DEFAULT_GRID_ENABLED,
+            log_x=DEFAULT_LOG_X,
+            log_y=DEFAULT_LOG_Y):
         """
         Plots a graph using data from one or more CSV files.
         All parameters set in the GUI are passed to this method.
+
+        log_x/log_y switch the axes to a base-10 logarithmic scale; points
+        whose log-scaled value is <= 0 are dropped and reported in the
+        returned warnings.
+
+        Returns:
+            list: warning strings, one per problem encountered. A bare
+                  "<file>: <reason>" line means that file could not be
+                  plotted; a "[WARN] <file>: ..." line means some of its
+                  points were omitted from a log axis.
         """
         if not files:
             raise ValueError("No files provided for plotting.")
@@ -52,6 +147,10 @@ class PlotManager:
         self.current_fig = fig
         self.current_ax = ax
 
+        # Log scales are applied before any limits so that autoscale and
+        # set_xlim/set_ylim both operate against the final scale
+        self.apply_log_axes(ax, log_x, log_y, grid_enabled)
+
         errors = []
 
         for ii, file in enumerate(files):
@@ -60,6 +159,16 @@ class PlotManager:
             if error:
                 errors.append(f"{os.path.basename(file)}: {error}")
                 continue
+
+            # A log axis physically cannot draw a value <= 0. Drop those points
+            # and report exactly how many, so the curve never silently loses its
+            # sub-threshold region. '[WARN]' marks an omission; a bare line
+            # above means the whole file failed.
+            x_data, y_data, drop_warnings = self.filter_nonpositive_pairs(
+                x_data, y_data, log_x, log_y)
+            errors.extend(
+                f"[WARN] {os.path.basename(file)}: {warning}"
+                for warning in drop_warnings)
 
             if normalize_x and x_data is not None and len(x_data) > 0:
                 x_data = x_data / x_data.max()

@@ -8,7 +8,8 @@ from settings import (
     SEPARATORS_DICT, LINE_STYLES, MARKER_STYLES,
     DEFAULT_LINE_STYLE, DEFAULT_MARKER_STYLE,
     DEFAULT_LINE_STYLE_NAME, DEFAULT_MARKER_STYLE_NAME,
-    DEFAULT_LINE_WIDTH, DEFAULT_GRID_ENABLED, DEFAULT_HEADER_ROWS
+    DEFAULT_LINE_WIDTH, DEFAULT_GRID_ENABLED, DEFAULT_HEADER_ROWS,
+    DEFAULT_LOG_X, DEFAULT_LOG_Y
 )
 
 class GraphingApp:
@@ -16,7 +17,7 @@ class GraphingApp:
         # Setup the GUI window
         self.root = root
         self.root.title("Python Graphing Application")
-        self.root.geometry("900x900")
+        self.root.geometry("900x950")
         self.root.resizable(False, True)
         # Set the icon
         icon_path = os.path.join(os.path.dirname(__file__), '../assets/graph_icon.ico')
@@ -53,6 +54,10 @@ class GraphingApp:
         self.y_min = tk.StringVar(value="")
         self.y_max = tk.StringVar(value="")
         self.use_y_limits = tk.BooleanVar()
+
+        # Logarithmic axis toggles (base 10)
+        self.log_x = tk.BooleanVar(value=DEFAULT_LOG_X)
+        self.log_y = tk.BooleanVar(value=DEFAULT_LOG_Y)
 
         # Legend labels
         self.legend_entries = []
@@ -223,6 +228,67 @@ class GraphingApp:
         inverse = {symbol: name for name, symbol in mapping.items()}
         return inverse.get(value, default_name)
 
+    @staticmethod
+    def validate_axis_limits(use_x_limits, x_min_s, x_max_s,
+                             use_y_limits, y_min_s, y_max_s,
+                             log_x=False, log_y=False):
+        """
+        Parse and validate the four axis-limit text fields.
+
+        Pure and non-raising on purpose: it takes the raw strings the entries
+        hold and turns every failure into a message, so a malformed field can
+        never escape to the caller as an exception.
+
+        Args:
+            use_x_limits (bool): True when the X limits are enabled.
+            x_min_s (str): raw X Min field contents ("" leaves it autoscaled).
+            x_max_s (str): raw X Max field contents.
+            use_y_limits (bool): True when the Y limits are enabled.
+            y_min_s (str): raw Y Min field contents.
+            y_max_s (str): raw Y Max field contents.
+            log_x (bool): True when the X axis is log-scaled.
+            log_y (bool): True when the Y axis is log-scaled.
+
+        Returns:
+            tuple: (x_limits, y_limits, error_message). A limit is None when
+                   its axis is disabled, otherwise an (min, max) pair in which
+                   either bound may be None to autoscale that end.
+                   error_message is None when everything checks out.
+        """
+        def parse_bound(text, field_name, is_log, log_axis_name):
+            """Parse one field -> (value or None, error_message or None)."""
+            if not (text or "").strip():
+                return None, None
+            try:
+                value = float(text)
+            except ValueError:
+                return None, f"{field_name} must be a number"
+            # A log axis cannot display a non-positive bound; Matplotlib would
+            # quietly ignore it, so reject it here and tell the user instead
+            if is_log and value <= 0:
+                return None, (f"{field_name} must be positive when "
+                              f"Log {log_axis_name} is enabled")
+            return value, None
+
+        results = {}
+        for axis, enabled, min_s, max_s, is_log in (
+                ("X", use_x_limits, x_min_s, x_max_s, log_x),
+                ("Y", use_y_limits, y_min_s, y_max_s, log_y)):
+            if not enabled:
+                results[axis] = None
+                continue
+            low, error = parse_bound(min_s, f"{axis} Min", is_log, axis)
+            if error:
+                return None, None, error
+            high, error = parse_bound(max_s, f"{axis} Max", is_log, axis)
+            if error:
+                return None, None, error
+            if low is not None and high is not None and low >= high:
+                return None, None, f"{axis} min must be less than {axis} max"
+            results[axis] = (low, high)
+
+        return results["X"], results["Y"], None
+
     def create_axis_inputs(self, parent):
         """
         Create the input fields for axis labels, title, scale factors, and normalization
@@ -274,6 +340,10 @@ class GraphingApp:
         use_x_limits_check = tk.Checkbutton(parent, text="Use X Limits", variable=self.use_x_limits)
         use_x_limits_check.grid(row=3, column=4, columnspan=2)
 
+        # Add checkbox for a logarithmic X axis (base 10)
+        log_x_check = tk.Checkbutton(parent, text="Log X", variable=self.log_x)
+        log_x_check.grid(row=3, column=6, columnspan=2, padx=5, pady=5)
+
         y_min_label = tk.Label(parent, text="Y Min:")
         y_min_label.grid(row=4, column=0, padx=5, pady=5)
         y_min_entry = tk.Entry(parent, textvariable=self.y_min)
@@ -287,6 +357,10 @@ class GraphingApp:
         # Add checkbox for Y Limits
         use_y_limits_check = tk.Checkbutton(parent, text="Use Y Limits", variable=self.use_y_limits)
         use_y_limits_check.grid(row=4, column=4, columnspan=2)
+
+        # Add checkbox for a logarithmic Y axis (base 10)
+        log_y_check = tk.Checkbutton(parent, text="Log Y", variable=self.log_y)
+        log_y_check.grid(row=4, column=6, columnspan=2, padx=5, pady=5)
         
     def create_legend_inputs(self):
         # Legend section title, packed in root
@@ -412,7 +486,7 @@ class GraphingApp:
             try:
                 col_idx = int(value.split(":")[0])
                 self.x_column_index.set(col_idx)
-            except:
+            except Exception:
                 pass
 
     def on_y_column_change(self, value):
@@ -425,7 +499,7 @@ class GraphingApp:
             try:
                 col_idx = int(value.split(":")[0])
                 self.y_column_index.set(col_idx)
-            except:
+            except Exception:
                 pass
 
     def update_column_dropdowns(self):
@@ -493,6 +567,8 @@ class GraphingApp:
                 'marker_style': self.marker_style_var.get(),
                 'line_width': self.line_width_var.get(),
                 'grid_enabled': self.grid_enabled_var.get(),
+                'log_x': self.log_x.get(),
+                'log_y': self.log_y.get(),
             }
 
             if self.use_x_limits.get():
@@ -554,6 +630,9 @@ class GraphingApp:
                     MARKER_STYLES, settings.get('marker_style', DEFAULT_MARKER_STYLE_NAME), DEFAULT_MARKER_STYLE_NAME))
                 self.line_width_var.set(settings.get('line_width', DEFAULT_LINE_WIDTH))
                 self.grid_enabled_var.set(settings.get('grid_enabled', DEFAULT_GRID_ENABLED))
+                # Presets saved before log axes existed load with them off
+                self.log_x.set(settings.get('log_x', DEFAULT_LOG_X))
+                self.log_y.set(settings.get('log_y', DEFAULT_LOG_Y))
 
                 if 'x_min' in settings:
                     self.x_min.set(settings['x_min'])
@@ -584,11 +663,13 @@ class GraphingApp:
             return
 
         # Validation: Check header rows
+        # Reading an IntVar/DoubleVar whose text is not a number raises
+        # tkinter.TclError, which is not a ValueError, so both are caught
         try:
             header_rows = self.header_rows.get()
             if header_rows < 0:
                 raise ValueError("Header rows must be non-negative")
-        except ValueError as e:
+        except (ValueError, tk.TclError) as e:
             messagebox.showerror("Error", f"Invalid header rows value: {e}")
             self.status_var.set("Error: Invalid header rows")
             return
@@ -599,7 +680,7 @@ class GraphingApp:
             y_col = self.y_column_index.get()
             if x_col < 0 or y_col < 0:
                 raise ValueError("Column indices must be non-negative")
-        except ValueError as e:
+        except (ValueError, tk.TclError) as e:
             messagebox.showerror("Error", f"Invalid column index: {e}")
             self.status_var.set("Error: Invalid column index")
             return
@@ -610,30 +691,30 @@ class GraphingApp:
             scale_y = self.scale_factor_y.get()
             if scale_x <= 0 or scale_y <= 0:
                 raise ValueError("Scale factors must be positive")
-        except ValueError as e:
+        except (ValueError, tk.TclError) as e:
             messagebox.showerror("Error", f"Invalid scale factor: {e}")
             self.status_var.set("Error: Invalid scale factor")
             return
 
-        # Validation: Validate axis limits if used
-        x_limits = None
-        y_limits = None
+        # Validation: Line width is a DoubleVar too, so it carries the same
+        # TclError hazard; parse it here so a bad entry reads as a width error
+        # rather than a generic plotting failure
         try:
-            if self.use_x_limits.get():
-                x_min = float(self.x_min.get()) if self.x_min.get() else None
-                x_max = float(self.x_max.get()) if self.x_max.get() else None
-                if x_min is not None and x_max is not None and x_min >= x_max:
-                    raise ValueError("X min must be less than X max")
-                x_limits = (x_min, x_max)
+            line_width = self.line_width_var.get()
+        except (ValueError, tk.TclError) as e:
+            messagebox.showerror("Error", f"Invalid line width: {e}")
+            self.status_var.set("Error: Invalid line width")
+            return
 
-            if self.use_y_limits.get():
-                y_min = float(self.y_min.get()) if self.y_min.get() else None
-                y_max = float(self.y_max.get()) if self.y_max.get() else None
-                if y_min is not None and y_max is not None and y_min >= y_max:
-                    raise ValueError("Y min must be less than Y max")
-                y_limits = (y_min, y_max)
-        except ValueError as e:
-            messagebox.showerror("Error", f"Invalid axis limits: {e}")
+        # Validation: Validate axis limits if used; this also rejects a
+        # non-positive bound on an axis that is about to be log-scaled
+        x_limits, y_limits, limit_error = self.validate_axis_limits(
+            self.use_x_limits.get(), self.x_min.get(), self.x_max.get(),
+            self.use_y_limits.get(), self.y_min.get(), self.y_max.get(),
+            self.log_x.get(), self.log_y.get()
+        )
+        if limit_error:
+            messagebox.showerror("Error", f"Invalid axis limits: {limit_error}")
             self.status_var.set("Error: Invalid axis limits")
             return
 
@@ -659,8 +740,10 @@ class GraphingApp:
                 use_y_limits=self.use_y_limits.get(),
                 line_style=self.style_to_symbol(LINE_STYLES, self.line_style_var.get(), DEFAULT_LINE_STYLE),
                 marker_style=self.style_to_symbol(MARKER_STYLES, self.marker_style_var.get(), DEFAULT_MARKER_STYLE),
-                line_width=self.line_width_var.get(),
-                grid_enabled=self.grid_enabled_var.get()
+                line_width=line_width,
+                grid_enabled=self.grid_enabled_var.get(),
+                log_x=self.log_x.get(),
+                log_y=self.log_y.get()
             )
 
             # Report any errors from file processing
@@ -724,6 +807,8 @@ class GraphingApp:
         self.y_max.set("")
         self.use_x_limits.set(False)
         self.use_y_limits.set(False)
+        self.log_x.set(DEFAULT_LOG_X)
+        self.log_y.set(DEFAULT_LOG_Y)
         self.separator_name.set("Comma")
         self.separator_str.set(",")
         for entry in self.legend_entries:

@@ -172,3 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Runtime state written by the application while it runs
+graph_presets.json
+
+# Ruff lint cache
+.ruff_cache/

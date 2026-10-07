@@ -60,5 +60,9 @@ DEFAULT_LINE_WIDTH = 2.0
 DEFAULT_GRID_ENABLED = True
 DEFAULT_PRESET_FILE = "graph_presets.json"
 
+# Log-scale defaults (base 10; values <= 0 cannot be plotted on a log axis)
+DEFAULT_LOG_X = False
+DEFAULT_LOG_Y = False
+
 # Number of metadata rows skipped before the CSV header (default: 0)
 DEFAULT_HEADER_ROWS = 0

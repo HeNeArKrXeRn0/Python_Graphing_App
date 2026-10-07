@@ -16,3 +16,25 @@ python-graphing-app = "python_graphing_app:main"
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# app/ uses flat imports (e.g. "from settings import ..."), so it goes on the
+# path directly rather than being imported as a package
+pythonpath = ["app"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py314"
+extend-exclude = [".venv", "src"]
+
+[tool.ruff.lint]
+# Ruff's recommended rule set. E5 (line length) is deliberately left out to
+# avoid reformatting existing code that has no length convention
+select = ["E4", "E7", "E9", "F"]

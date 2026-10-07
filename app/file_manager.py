@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import tkinter as tk
 from tkinter import filedialog, messagebox, Toplevel, Text, Scrollbar
 import chardet
 from settings import MAX_FILES, SEPARATORS_DICT, DEFAULT_HEADER_ROWS
@@ -154,7 +155,7 @@ class FileManager:
                 nrows=5
             )
             column_info = [f"{i}: {col}" for i, col in enumerate(data.columns)]
-        except:
+        except Exception:
             column_info = []
 
         return best_separator, column_info
@@ -213,6 +214,3 @@ class FileManager:
 
         # Close button
         tk.Button(preview_window, text="Close", command=preview_window.destroy).pack(pady=10)
-
-# Import tkinter for the preview dialog
-import tkinter as tk
